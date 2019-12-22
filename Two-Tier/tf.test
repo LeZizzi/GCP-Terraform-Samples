@@ -1,0 +1,1 @@
+terraformer import google --resources=gcs,firewalls,forwardingRules,instanceTemplates,regionBackendServices,regionInstanceGroupManagers,networks,subnetworks,healthChecks,urlMaps,backendServices,httpHealthChecks,backendBuckets --projects=terrabuild
