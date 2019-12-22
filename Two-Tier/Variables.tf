@@ -1,6 +1,6 @@
 // PROJECT Variables
 variable "my_gcp_project" {
-  default = "Your_Project_ID"
+  default = "tera-83100"
 }
 
 variable "region" {
