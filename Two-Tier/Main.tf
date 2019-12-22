@@ -18,7 +18,7 @@
 
 // Configure the Google Cloud provider
 provider "google" {
-  credentials = file(".json")
+  credentials = file("service-account.json")
   project     = var.my_gcp_project
   region      = var.region
 }
@@ -82,28 +82,13 @@ resource "google_compute_network" "db" {
 }
 
 // Adding GCP ROUTE to WEB Interface
-resource "google_compute_route" "web-route" {
-  name                   = "web-route"
-  dest_range             = "0.0.0.0/0"
-  network                = google_compute_network.web.self_link
-  next_hop_instance      = element(google_compute_instance.firewall.*.name,count.index)
-  next_hop_instance_zone = var.zone
-  priority               = 100
-
-  depends_on = ["google_compute_instance.firewall",
-    "google_compute_network.web",
-    "google_compute_network.db",
-    "google_compute_network.untrust",
-    "google_compute_network.management",
-  ]
-}
 
 // Adding GCP ROUTE to DB Interface
 resource "google_compute_route" "db-route" {
   name                   = "db-route"
   dest_range             = "0.0.0.0/0"
   network                = google_compute_network.db.self_link
-  next_hop_instance      = element(google_compute_instance.firewall.*.name,count.index)
+  //next_hop_instance      = element(google_compute_instance.firewall.*.name,count.index)
   next_hop_instance_zone = var.zone
   priority               = 100
 
@@ -180,12 +165,12 @@ resource "google_compute_instance" "firewall" {
   count                     = 1
 
   // Adding METADATA Key Value pairs to VM-Series GCE instance
-  metadata {
-    vmseries-bootstrap-gce-storagebucket = var.bootstrap_bucket_fw
-    serial-port-enable                   = true
-
-    # sshKeys                              = "${var.public_key}"
-  }
+//  metadata {
+  //  vmseries-bootstrap-gce-storagebucket = var.bootstrap_bucket_fw
+   // serial-port-enable                   = true
+//
+  //  # sshKeys                              = "${var.public_key}"
+  //  }
 
   service_account {
     scopes = var.scopes_fw
@@ -193,23 +178,22 @@ resource "google_compute_instance" "firewall" {
 
   network_interface {
     subnetwork    = google_compute_subnetwork.management-sub.self_link
-    access_config = {}
+
   }
 
   network_interface {
     subnetwork    = google_compute_subnetwork.untrust-sub.self_link
-    address       = "10.5.1.4"
-    access_config = {}
+
   }
 
   network_interface {
     subnetwork = google_compute_subnetwork.web-trust-sub.self_link
-    address    = "10.5.2.4"
+
   }
 
   network_interface {
     subnetwork = google_compute_subnetwork.db-trust-sub.self_link
-    address    = "10.5.3.4"
+
   }
 
   boot_disk {
@@ -268,13 +252,6 @@ resource "google_compute_instance" "webserver" {
   allow_stopping_for_update = true
   count                     = 1
 
-  // Adding METADATA Key Value pairs to WEB SERVER 
-  metadata {
-    startup-script-url = var.web_startup_script_bucket
-    serial-port-enable = true
-
-    # sshKeys                              = "${var.public_key}"
-  }
 
   service_account {
     scopes = var.scopes_web
@@ -282,7 +259,7 @@ resource "google_compute_instance" "webserver" {
 
   network_interface {
     subnetwork = google_compute_subnetwork.web-trust-sub.self_link
-    address    = var.ip_web
+
   }
 
   boot_disk {
@@ -299,15 +276,3 @@ resource "google_compute_instance" "webserver" {
   ]
 }
 
-// Output
-output "firewall-web-trust-ip" {
-  value = google_compute_instance.firewall.network_interface[2].address
-}
-
-output "firewall-db-trust-ip" {
-  value = google_compute_instance.firewall.network_interface[3].address
-}
-
-output "firewall-name" {
-  value = google_compute_instance.firewall.*.name
-}
